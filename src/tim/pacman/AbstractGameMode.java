@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
+import java.util.Timer;
 
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
@@ -51,17 +52,26 @@ public abstract class AbstractGameMode implements GameMode {
 	 */
 	private Ghost[] ghosts;
 	
+	/**
+	 * The timer used for scheduling events
+	 */
+	protected Timer timer;
+	
+	/**
+	 * The current movement modifier
+	 */
+	protected float player1Modifier;
+	
+	protected float player2Modifier;
+	
 	
 	
 	@Override
 	public void doTick(long time, long delta)
 	{
 		gameTime += delta;
-		player1.getLocation().x += player1.getVelocity().x * 0.25;
-		player1.getLocation().y += player1.getVelocity().y * 0.25;
-		
-		player2.getLocation().x += player2.getVelocity().x * 0.25;
-		player2.getLocation().y += player2.getVelocity().y * 0.25;
+		doMovement(player1, player1Modifier);
+		doMovement(player2, player2Modifier);
 		
 		Rectangle2D.Float pla1 = player1.getLocationAsRect();
 		Rectangle2D.Float pla2 = player2.getLocationAsRect();
@@ -79,6 +89,17 @@ public abstract class AbstractGameMode implements GameMode {
 		snapToGrid(player2);
 	}
 	
+	/**
+	 * Moves the specified players coordinate the appropriate
+	 * velocity with the specified modifier
+	 * @param player the player
+	 * @param modifier the modifier
+	 */
+	protected void doMovement(Player player, float modifier) {
+		player.getLocation().x += player.getVelocity().x * modifier;
+		player.getLocation().y += player.getVelocity().y * modifier;
+	}
+
 	/**
 	 * Checks if any of the entities are colliding with the player
 	 * @param time the current game time
@@ -155,8 +176,7 @@ public abstract class AbstractGameMode implements GameMode {
 	 * @param type the type of block
 	 */
 	protected void specialMovement(Player pl, byte type) {
-		pl.getLocation().x -= pl.getVelocity().x * 0.25;
-		pl.getLocation().y -= pl.getVelocity().y * 0.25;
+		doMovement(pl, -0.25f);
 	}
 
 	/**
@@ -221,6 +241,8 @@ public abstract class AbstractGameMode implements GameMode {
 	{
 		gameMap = map;
 		ghosts = new Ghost[getNumberGhosts()];
+		player1Modifier = 0.25f;
+		player2Modifier = 0.25f;
 		for(int i = 0; i < getNumberGhosts(); i++)
 		{
 			spawnGhost(i, GameMap.SPAWNER);

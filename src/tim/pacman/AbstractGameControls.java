@@ -12,7 +12,7 @@ public abstract class AbstractGameControls implements GameControls {
 	private Player player1;
 	private Player player2;
 	
-	private GameMode gameMode;
+	protected GameMode gameMode;
 	
 	/**
 	 * Creates the game controls.  Will have a matching pointer to
@@ -22,100 +22,18 @@ public abstract class AbstractGameControls implements GameControls {
 	 */
 	public AbstractGameControls(GameMode gameMode)
 	{
-		setPlayer1(gameMode.getPlayer1());
-		setPlayer2(gameMode.getPlayer2());
+		if(gameMode != null)
+		{
+			setPlayer1(gameMode.getPlayer1());
+			setPlayer2(gameMode.getPlayer2());
+		}else
+		{
+			
+		}
 		
 		this.gameMode = gameMode;
 	}
 	
-	/**
-	 * Sets player 1's direction up, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer1Up()
-	{
-		getPlayer1().getVelocity().y = -1;
-		getPlayer1().getVelocity().x = 0;
-		getPlayer1().setRotation(270f);
-	}
-	
-	/**
-	 * Sets player 1's direction down, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer1Down()
-	{
-		getPlayer1().getVelocity().y = 1;
-		getPlayer1().getVelocity().x = 0;
-		getPlayer1().setRotation(90f);
-	}
-	
-	/**
-	 * Sets player 1's direction left, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer1Left()
-	{
-		getPlayer1().getVelocity().x = -1;
-		getPlayer1().getVelocity().y = 0;
-		getPlayer1().setRotation(180f);
-	}
-	
-	/**
-	 * Sets player 1's direction right, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer1Right()
-	{
-		getPlayer1().getVelocity().x = 1;
-		getPlayer1().getVelocity().y = 0;
-		getPlayer1().setRotation(0f);
-	}
-	
-	/**
-	 * Sets player 2's direction up, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer2Up()
-	{
-		getPlayer2().getVelocity().y = -1;
-		getPlayer2().getVelocity().x = 0;
-		getPlayer2().setRotation(270f);
-	}
-	
-	/**
-	 * Sets player 2's direction down, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer2Down()
-	{
-		getPlayer2().getVelocity().y = 1;
-		getPlayer2().getVelocity().x = 0;
-		getPlayer2().setRotation(90f);
-	}
-	
-	/**
-	 * Sets player 2's direction left, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer2Left()
-	{
-		getPlayer2().getVelocity().x = -1;
-		getPlayer2().getVelocity().y = 0;
-		getPlayer2().setRotation(180f);
-	}
-	
-	/**
-	 * Sets player 2's direction right, with a matching
-	 * velocity and rotation
-	 */
-	protected void setPlayer2Right()
-	{
-		getPlayer2().getVelocity().x = 1;
-		getPlayer2().getVelocity().y = 0;
-		getPlayer2().setRotation(0f);
-	}
-
 	/**
 	 * Returns player 2
 	 * @return player 2

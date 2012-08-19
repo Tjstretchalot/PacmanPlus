@@ -35,7 +35,7 @@ public class CreateGameGUI implements Gui {
 	
 	private static final long MINIMUM_DELAY = 200;
 	
-	private static final String[] MODES = new String[] {
+	public static final String[] MODES = new String[] {
 		"Built to last",
 		"Try to avoid the monsters in the middle while aquiring points",
 		"1 v 1",
@@ -124,9 +124,12 @@ public class CreateGameGUI implements Gui {
 		if(Keyboard.isKeyDown(Keyboard.KEY_RETURN) && time - lastPress > MINIMUM_DELAY)
 		{
 			System.out.println(MODES[mode * 2] + " was selected");
+			
 			GameMap gameMap = new AStarGameMap(GameMap.GAME_MAP);
 			GameMode gameMode = null;
 			GameControls gameControls = null;
+			
+			
 			
 			if(mode == 1)
 				gameMode = new OneVsOneMode(gameMap);

@@ -97,8 +97,8 @@ public class AStarGhostControls implements GhostController {
 				doNextStep(g, nextStep, plLoc);
 		}
 		
-		((AbstractGameMode) gameMode).checkBoundaries(g);
-		((AbstractGameMode) gameMode).snapToGrid(g);
+		gameMode.checkBoundaries(g);
+		gameMode.snapToGrid(g);
 	}
 
 	private void revalueSteps() {

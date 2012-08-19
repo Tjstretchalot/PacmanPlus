@@ -111,6 +111,8 @@ public class PacmanApplication extends BasicGame {
 
 	private Texture logo;
 	private GhostController ghostControls;
+
+	private long lastChange;
 	private static long linkLastPressed;
 
 
@@ -393,6 +395,7 @@ public class PacmanApplication extends BasicGame {
 	public synchronized void setGUI(final Gui newGui)
 	{
 		nextGui = newGui;
+		lastChange = getTime();
 	}
 	
 	/**
@@ -417,6 +420,7 @@ public class PacmanApplication extends BasicGame {
 		
 		synchronized(this) {
 			gui = null;
+			lastChange = getTime();
 		}
 	}
 	
@@ -477,6 +481,10 @@ public class PacmanApplication extends BasicGame {
 	 */
 	public Texture getLogo() {
 		return logo;
+	}
+
+	public long getLastChange() {
+		return lastChange;
 	}
 
 }

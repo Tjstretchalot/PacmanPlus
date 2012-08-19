@@ -19,14 +19,14 @@ public class HumanAgainstAIControls extends AbstractGameControls {
 	@Override
 	public void doTick(long time) {
 		if(Keyboard.isKeyDown(Keyboard.KEY_W) || Keyboard.isKeyDown(Keyboard.KEY_UP))
-			setPlayer1Up();
+			getPlayer1().goUp();
 		else if(Keyboard.isKeyDown(Keyboard.KEY_S) || Keyboard.isKeyDown(Keyboard.KEY_DOWN))
-			setPlayer1Down();
+			getPlayer1().goDown();
 		
 		if(Keyboard.isKeyDown(Keyboard.KEY_A) || Keyboard.isKeyDown(Keyboard.KEY_LEFT))
-			setPlayer1Left();
+			getPlayer1().goLeft();
 		else if(Keyboard.isKeyDown(Keyboard.KEY_D) || Keyboard.isKeyDown(Keyboard.KEY_RIGHT))
-			setPlayer1Right();
+			getPlayer1().goRight();
 		
 		aiController.doTick(time);
 	}

@@ -1,6 +1,7 @@
 package tim.pacman.impl;
 
 import java.awt.geom.Rectangle2D;
+import java.util.TimerTask;
 
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
@@ -24,6 +25,25 @@ public class TagMode extends AbstractGameMode {
 												// before the other player is
 												// forcibly made it.
 	private static final long GAME_TIME = 120;
+	
+	private final TimerTask PL1_BOOST = new TimerTask() {
+
+		@Override
+		public void run() {
+			player1Modifier = 0.25f;
+		}
+		
+	};
+	
+	private final TimerTask PL2_BOOST = new TimerTask() {
+
+		@Override
+		public void run() {
+			player2Modifier = 0.25f;
+		}
+		
+	};
+	
 	private boolean player1It;
 	private long lastSwitched;
 	private long start;
@@ -50,29 +70,41 @@ public class TagMode extends AbstractGameMode {
 
 		Rectangle2D.Float play1 = player1.getLocationAsRect();
 		Rectangle2D.Float play2 = player2.getLocationAsRect();
+		
 		if (play1.intersects(play2) && time - lastSwitched > 1500) {
 			player1It = !player1It;
 			lastSwitched = time;
 			speedBoostEnds = time + 500;
 			stopShowingTeamsSwitched = time + 1000;
 			forced = false;
+			
+			if(player1It)
+			{
+				player1Modifier = 0.5f;
+				timer.schedule(PL1_BOOST, 500);
+			}else
+			{
+				player2Modifier = 0.5f;
+				timer.schedule(PL2_BOOST, 500);
+			}
+			
 		}
 		// Increase the speed for the person who is it a little
-		if (player1It) {
-			player1.getLocation().x += player1.getVelocity().x * 0.1f;
-			player1.getLocation().y += player1.getVelocity().y * 0.1f;
-
-			if (time < speedBoostEnds) {
-				player2.getLocation().x += player2.getVelocity().x * 0.45f;
-			}
-		} else {
-			player2.getLocation().x += player2.getVelocity().x * 0.1f;
-			player2.getLocation().y += player2.getVelocity().y * 0.1f;
-
-			if (time < speedBoostEnds) {
-				player1.getLocation().x += player1.getVelocity().x * 0.45f;
-			}
-		}
+//		if (player1It) {
+//			player1.getLocation().x += player1.getVelocity().x * 0.1f;
+//			player1.getLocation().y += player1.getVelocity().y * 0.1f;
+//
+//			if (time < speedBoostEnds) {
+//				player2.getLocation().x += player2.getVelocity().x * 0.45f;
+//			}
+//		} else {
+//			player2.getLocation().x += player2.getVelocity().x * 0.1f;
+//			player2.getLocation().y += player2.getVelocity().y * 0.1f;
+//
+//			if (time < speedBoostEnds) {
+//				player1.getLocation().x += player1.getVelocity().x * 0.45f;
+//			}
+//		}
 
 		if ((time - lastSwitched) / 1000 >= FORCE_SWAP) {
 			stopShowingTeamsSwitched = time + 1000;

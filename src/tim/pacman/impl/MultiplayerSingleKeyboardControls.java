@@ -15,32 +15,32 @@ public class MultiplayerSingleKeyboardControls extends AbstractGameControls {
 	public void doTick(long time) {
 		if(isKeyDown(KEY_W))
 		{
-			setPlayer1Up();
+			getPlayer1().goUp();
 		}else if(isKeyDown(KEY_S))
 		{
-			setPlayer1Down();
+			getPlayer1().goDown();
 		}
 		
 		if(isKeyDown(KEY_A))
 		{
-			setPlayer1Left();
+			getPlayer1().goLeft();
 		}else if(isKeyDown(KEY_D))
 		{
-			setPlayer1Right();
+			getPlayer1().goRight();
 		}
 		
 		if(isKeyDown(KEY_LEFT))
 		{
-			setPlayer2Left();
+			getPlayer2().goLeft();
 		}else if(isKeyDown(KEY_RIGHT))
 		{
-			setPlayer2Right();
+			getPlayer2().goRight();
 		}
 		
 		if(isKeyDown(KEY_UP))
-			setPlayer2Up();
+			getPlayer2().goUp();
 		else if(isKeyDown(KEY_DOWN))
-			setPlayer2Down();
+			getPlayer2().goDown();
 	}
 	
 }

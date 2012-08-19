@@ -45,6 +45,7 @@ public class MainMenuGui implements Gui{
 
 	@Override
 	public void render(GameContainer container, Graphics graphics) throws SlickException {
+		boolean chScreen = PacmanApplication.getTime() - PacmanApplication.application.getLastChange() > 500;
 		textures[LOGO].bind();
 		
 		glBegin(GL_QUADS);
@@ -64,17 +65,17 @@ public class MainMenuGui implements Gui{
 		float y = 175f;
 		
 		boolean clicked = PacmanApplication.drawHighlightableText(graphics, "Donate", 10f, (480f - graphics.getFont().getHeight("Donate") - 10f));
-		if(clicked)
+		if(clicked && chScreen)
 			onClick(graphics, 100);
 		
 		float x = Display.getWidth() - graphics.getFont().getWidth(HOST) - 10;
-		PacmanApplication.drawText(graphics, HOST, x, (480f - graphics.getFont().getHeight("Donate") - 10f));
+		PacmanApplication.drawText(graphics, HOST, x, (480f - graphics.getFont().getHeight(HOST) - 10f));
 		
 		for(int i = 0; i < options.length; i++)
 		{
 			String str = options[i];
 			clicked = PacmanApplication.drawCenteredHText(graphics, str, y);
-			if(clicked)
+			if(clicked && chScreen)
 				onClick(graphics, i);
 			y += 50f;
 		}
@@ -88,6 +89,9 @@ public class MainMenuGui implements Gui{
 		{
 			CreateGameGUI gui = new CreateGameGUI(text, textures[LOGO]);;
 			PacmanApplication.application.setGUI(gui);
+		}else if(text == 2)
+		{
+			PacmanApplication.application.setGUI(new MultiplayerGui());
 		}else if(text == 100)
 		{
 			PacmanApplication.application.setGUI(new DonateGui(grap));
