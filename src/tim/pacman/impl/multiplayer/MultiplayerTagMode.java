@@ -8,4 +8,10 @@ public class MultiplayerTagMode extends AbstractMultiplayerGameMode {
 		super(map, numGhosts);
 	}
 
+	@Override
+	public boolean isGameOver() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

@@ -27,4 +27,11 @@ public class LANGame {
 	public void setAddress(SocketAddress address) {
 		this.address = address;
 	}
+
+	@Override
+	public String toString() {
+		return "LANGame [name=" + name + ", address=" + address + "]";
+	}
+	
+	
 }

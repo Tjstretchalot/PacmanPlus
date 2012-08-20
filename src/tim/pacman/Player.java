@@ -169,5 +169,42 @@ public class Player {
 		setRotation(0f);
 	}
 
+	@Override
+	public String toString() {
+		return "Player [location=" + location + ", score=" + score + ", name="
+				+ name + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((location == null) ? 0 : location.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + ((rect == null) ? 0 : rect.hashCode());
+		result = prime * result + Float.floatToIntBits(rotation);
+		result = prime * result + score;
+		result = prime * result
+				+ ((velocity == null) ? 0 : velocity.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(!(obj instanceof Player))
+			return false;
+		Player other = (Player) obj;
+		if(other.location.x != location.x)
+			return false;
+		else if(other.location.y != location.y)
+			return false;
+		else if(other.score != score)
+			return false;
+		else if(!other.getName().equals(getName()))
+			return false;
+		return true;
+	}
+
 	
 }

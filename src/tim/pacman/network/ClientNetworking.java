@@ -11,6 +11,14 @@ import java.nio.channels.SocketChannel;
 
 import org.lwjgl.Sys;
 
+import tim.pacman.GameMap;
+import tim.pacman.GameMode;
+import tim.pacman.PacmanApplication;
+import tim.pacman.Player;
+import tim.pacman.impl.ai.AStarGameMap;
+import tim.pacman.impl.multiplayer.ClientMP;
+import tim.pacman.impl.multiplayer.MultiplayerData;
+
 /**
  * @author Timothy
  *
@@ -22,18 +30,31 @@ public class ClientNetworking extends PacmanNetworking {
 	
 	private String name;
 	private ByteBuffer theBuffer;
+	public GameMode gameMode;
+	public int numberOfGhosts;
+	public int numberOfPlayers;
+	private AStarGameMap gameMap;
 
 	/**
 	 * @param inetAddress the game mode
 	 */
 	public ClientNetworking(SocketAddress inetAddress, String name) {
+		super();
 		address = inetAddress;
 		theBuffer = ByteBuffer.allocate(1028);
+		System.out.println("Client created: " + name + " at " + inetAddress);
 		this.name = name;
 		
 		try
 		{
 			initializeConnection();
+			
+			synchronized(connectedPlayers)
+			{
+				connectedPlayers.add(new ClientMP(name, 0, 0));
+			}
+			
+			System.out.println("Finished. Players: " + connectedPlayers);
 		}catch(IOException exc)
 		{
 			System.err.println("Failed to initialize client networking: " + exc.getMessage());
@@ -44,17 +65,53 @@ public class ClientNetworking extends PacmanNetworking {
 		}
 	}
 
+	public ClientNetworking(LANGame game) {
+		this(game.getAddress(), "Player " + (PacmanApplication.getRND().nextInt(999) + 1));
+	}
+
 	protected void initializeConnection() throws IOException {
 		connection = SocketChannel.open();
 		connection.connect(address);
-		ByteBuffer buffer = ByteBuffer.allocate(1028);
+		System.out.println("Successfully connected");
+		ByteBuffer buffer = ByteBuffer.allocate(1028); // Writing
+		buffer.put(CLIENT_CONNECTED);
 		buffer.putInt(name.length());
 		for(char c : name.toCharArray())
 		{
 			buffer.putChar(c);
 		}
-		buffer.flip();
+		buffer.flip(); // Prepare for reading
+		System.out.println("Writing " + buffer);
 		connection.write(buffer);
+		
+		buffer.clear(); // Prepare for writing
+		connection.read(buffer);
+		
+		buffer.flip(); // Prepare for reading
+		System.out.println("Read " + buffer.remaining() + " bytes");
+		int numPlayers = buffer.get();
+		System.out.println("Number of players: " + numPlayers);
+		
+		for(int i = 0; i < numPlayers; i++)
+		{
+			int numChars = buffer.getInt();
+			System.out.println("Length of the name of player #" + i + ": " + numChars);
+			StringBuilder res = new StringBuilder("");
+			for(int j = 0; j < numChars; j++)
+				res.append(buffer.getChar());
+			System.out.println(res.toString());
+			Player player = new ClientMP(res.toString(), 0, 0);
+			synchronized(connectedPlayers)
+			{
+				connectedPlayers.add(player);
+			}
+		}
+		
+		gameMap = new AStarGameMap(GameMap.GAME_MAP);
+		byte mode = buffer.get();
+		numberOfPlayers = buffer.get();
+		numberOfGhosts = buffer.get();
+		gameMode = MultiplayerData.createInstance(mode, numberOfGhosts, gameMap);
 		
 		connection.configureBlocking(false);
 	}

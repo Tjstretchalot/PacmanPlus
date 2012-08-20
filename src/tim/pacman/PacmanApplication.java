@@ -27,6 +27,7 @@ import org.newdawn.slick.opengl.TextureLoader;
 
 import tim.pacman.impl.MainMenuGui;
 import tim.pacman.impl.ai.AStarGhostControls;
+import tim.pacman.impl.multiplayer.AbstractMultiplayerGameMode;
 
 /*
  * The main goal of this application is ability to add more 
@@ -179,8 +180,11 @@ public class PacmanApplication extends BasicGame {
             glClear(GL_COLOR_BUFFER_BIT);
 			
 			theMap.render(cont, g);
-			gameMode.getPlayer1().render(cont, g);
-			gameMode.getPlayer2().render(cont, g);
+			if(!(gameMode instanceof AbstractMultiplayerGameMode))
+			{
+				gameMode.getPlayer1().render(cont, g);
+				gameMode.getPlayer2().render(cont, g);
+			}
 			
 			gameMode.doCustomRendering(cont, g);
 		}
@@ -247,14 +251,14 @@ public class PacmanApplication extends BasicGame {
 	 * @return the location where the text is
 	 */
 	public static Rectangle2D.Float drawCenteredText(Graphics graphics, String txt, float y) {
-		float width = graphics.getFont().getWidth(txt);
-		float x = Display.getWidth() / 2 - width / 2;
-		return drawText(graphics, txt, x, y);
+		float leftX = 0f;
+		float rightX = Display.getWidth();
+		return drawCenteredText(graphics, txt, leftX, rightX, y);
 	}
 	
 	/**
 	 * Draws the specified text in the center of the screen and 
-	 * returns if it is being clicked.
+	 * returns if it is being clicked. Same as drawCenteredText(graphics, txt, 0, Display.getWidth(), y)
 	 * @param graphics the graphics
 	 * @param txt the text
 	 * @param y the y coordinate
@@ -262,8 +266,23 @@ public class PacmanApplication extends BasicGame {
 	 */
 	public static boolean drawCenteredHText(Graphics graphics, String txt, float y)
 	{
+		return drawCenteredHText(graphics, txt, 0, Display.getWidth(), y);
+	}
+	
+	/**
+	 * Draws a centered text, except rather than using 0 and 
+	 * the screen width it uses set values.
+	 * @param graphics  the graphics
+	 * @param txt the text
+	 * @param leftX the left x
+	 * @param rightX the right x
+	 * @param y the y coordinate
+	 * @return if it is being clicked
+	 */
+	public static boolean drawCenteredHText(Graphics graphics, String txt, float leftX, float rightX, float y)
+	{
 		float width = graphics.getFont().getWidth(txt);
-		float x = Display.getWidth() / 2 - width / 2;
+		float x = leftX + ((rightX - leftX) / 2 - width / 2);
 		return drawHighlightableText(graphics, txt, x, y);
 	}
 	
@@ -485,6 +504,26 @@ public class PacmanApplication extends BasicGame {
 
 	public long getLastChange() {
 		return lastChange;
+	}
+
+	public void setLastChange(long time) {
+		lastChange = time;
+	}
+
+	/**
+	 * Draws centered text where leftX is the left 
+	 * of the center and right x is the right of the screen
+	 * @param graphics the graphics
+	 * @param string the string
+	 * @param leftX left x
+	 * @param rightX right x
+	 */
+	public static Rectangle2D.Float drawCenteredText(Graphics graphics, String txt,
+			float leftX, float rightX, float y) {
+		float width = graphics.getFont().getWidth(txt);
+		float x = leftX + ((rightX - leftX) / 2 - width / 2);
+		
+		return drawText(graphics, txt, x, y);
 	}
 
 }

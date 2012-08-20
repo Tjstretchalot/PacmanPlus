@@ -35,7 +35,8 @@ public class PacketRecieverImpl extends PacketReciever {
 						System.out.println(buffer);
 						byte type = buffer.get(); // read the type.
 						System.out.println(type);
-						Packet packet = new PlayerPacket(networking.getPlayers().get(i), type, buffer);
+						Packet packet = new PlayerPacket(networking.getPlayers().get(i + 1), type, buffer);
+						System.out.println("Recieved packet from " + networking.getPlayers().get(i + 1).getName());
 						buffer = ByteBuffer.allocate(1028);
 						networking.processQueue.add(packet);
 					}catch(Exception exc)

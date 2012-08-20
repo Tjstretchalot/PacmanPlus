@@ -29,10 +29,23 @@ import tim.pacman.network.PacmanNetworking;
  */
 public class ConnectGui implements Gui {
 	private List<LANGame> games;
+	private Thread searchThread;
+	private long timeUntilDotChange;
+	private String dots;
 	
 	public ConnectGui()
 	{
 		games = new ArrayList<LANGame>();
+		searchThread = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				PacmanNetworking.scanForLocalGames(games);
+			}
+			
+		});
+		searchThread.start();
+		dots = "";
 	}
 	
 	@Override
@@ -54,20 +67,27 @@ public class ConnectGui implements Gui {
 			glVertex2f(64f, 148f);
 		glEnd();
 		
-		float y = 150;
-		drawCenteredText(graphics, "Sorry, this hasn't been implemented yet :(", y);
-		y += 50;
+		float y = 200;
+		if(searchThread.isAlive())
+		{
+			drawCenteredText(graphics, "Scanning" + dots, y);
+			y += 25;
+		}
 		if(games.size() == 0)
 		{
 			y += 25;
-			drawCenteredText(graphics, "No games found", y);
+			drawCenteredText(graphics, "No games found..", y);
 		}
 		for(LANGame game : games)
 		{
 			y += 25;
 			boolean connect = drawCenteredHText(graphics, game.getName() + " - " + game.getAddress(), y);
 			if(connect && chScreen)
-				PacmanNetworking.doConnect(game);
+			{
+				if(searchThread.isAlive())
+					searchThread.suspend();
+				PacmanNetworking.doConnect(game, this);
+			}
 		}
 		
 		y += 50;
@@ -78,7 +98,15 @@ public class ConnectGui implements Gui {
 
 	@Override
 	public void update(GameContainer cont, int delta) {
+		timeUntilDotChange -= delta;
 		
+		if(timeUntilDotChange <= 0)
+		{
+			dots += ".";
+			if(dots.length() > 3)
+				dots = "";
+			timeUntilDotChange = 500l;
+		}
 	}
 
 }

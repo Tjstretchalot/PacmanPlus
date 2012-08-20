@@ -345,10 +345,7 @@ public class GameMap {
 	 * @return the grid location
 	 */
 	public Point toGridLocation(Point2D.Float f) {
-		int locationX = Math.round((f.x - 112) / 16f);
-		int locationY = Math.round((f.y - 32) / 16f);
-		
-		return new Point(locationX, locationY);
+		return toGridLocation(f.x, f.y);
 	}
 	
 	/**
@@ -447,6 +444,19 @@ public class GameMap {
 		
 		int ran = PacmanApplication.getRND().nextInt(poss.size());
 		return poss.get(ran);
+	}
+
+	/**
+	 * Returns the grid location contained by the specified x and y coordinate
+	 * @param x the xcoord
+	 * @param y the y coord
+	 * @return the grid location
+	 */
+	public Point toGridLocation(float x, float y) {
+		int locationX = Math.round((x - 112) / 16f);
+		int locationY = Math.round((y - 32) / 16f);
+		
+		return new Point(locationX, locationY);
 	}
 
 }

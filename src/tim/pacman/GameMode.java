@@ -60,7 +60,7 @@ public interface GameMode {
 	
 	/**
 	 * Returns the number of ghosts. May be dynamic, implementation specific
-	 * @return
+	 * @return the number of ghosts
 	 */
 	public int getNumberGhosts();
 

@@ -13,6 +13,8 @@ import java.nio.channels.SocketChannel;
 
 import tim.pacman.GameMode;
 import tim.pacman.Player;
+import tim.pacman.impl.multiplayer.ClientMP;
+import tim.pacman.impl.multiplayer.MultiplayerData;
 
 /**
  * @author Timothy
@@ -22,11 +24,22 @@ public class HostNetworking extends PacmanNetworking {
 	private GameMode gameMode;
 	private ServerSocketChannel servChannel;
 	private ConnectionHandler mConnectionHandler;
+	private Player hostPlayer;
+	private int maxPlayers;
+	private int numGhosts;
 
-	public HostNetworking(GameMode gameMode) {
+	public HostNetworking(GameMode gameMode, int maxPlayers, int numGhosts, String playerName) {
 		this.gameMode = gameMode;
+		running = true;
+		this.maxPlayers = maxPlayers;
+		this.numGhosts = numGhosts;
+		
+		System.out.println("Host created: " + gameMode.getClass().getSimpleName() + ", " + maxPlayers +
+				", " + numGhosts + ", " + playerName);
 		initializeChannel();
 		initializeThreads();
+		hostPlayer = new ClientMP(playerName, 0, 0);
+		connectedPlayers.add(hostPlayer);
 	}
 
 	private void initializeThreads() {
@@ -43,7 +56,8 @@ public class HostNetworking extends PacmanNetworking {
 	public void doTick(long time)
 	{
 		super.doTick(time);
-		System.out.println("Ticking... " + processQueue.size() + " Packets need to be evaluated");
+		if(processQueue.size() > 100)
+			System.out.println("System Overloaded! " + processQueue.size() + " Packets need to be evaluated");
 		
 		while(processQueue.size() > 0 && running)
 		{
@@ -59,11 +73,11 @@ public class HostNetworking extends PacmanNetworking {
 			case CLIENT_DISCONNECTED:
 				Player pla = ((PlayerPacket) packet).getPlayer();
 				int ind = getPlayers().indexOf(pla);
-				getPlayers().remove(ind);
-				getPlayerChannels().remove(ind);
-
 				System.out.println("Client #" + (ind + 1) + " [" + pla.getName() + 
 						"] disconnected: Left Server");
+				
+				getPlayers().remove(ind);
+				getPlayerChannels().remove(ind - 1);
 				break;
 			default:
 				System.err.println("Odd type retrieved: " + packet.getType());
@@ -76,7 +90,21 @@ public class HostNetworking extends PacmanNetworking {
 			servChannel = ServerSocketChannel.open();
 			servChannel.configureBlocking(true);
 			SocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), PORT);
-			servChannel.bind(address);
+			
+			int counter = 0;
+			while(true)
+			{
+				try
+				{
+					servChannel.bind(address);
+					break;
+				}catch(IOException ex)
+				{
+					counter++;
+					address = new InetSocketAddress(InetAddress.getLocalHost(), PORT + counter);
+					
+				}
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -97,9 +125,28 @@ public class HostNetworking extends PacmanNetworking {
 					}
 					chan.configureBlocking(true);
 					System.out.println("Client connected: " + chan);
-					ByteBuffer buffer = ByteBuffer.allocate(1028);
-					chan.read(buffer);
-					buffer.flip(); // Read the number of bytes
+					ByteBuffer buffer = ByteBuffer.allocate(1028); // starts ready for writing
+					buffer.clear();
+					
+					chan.read(buffer); // write into the buffer
+					
+					buffer.flip(); // Prepare for reading
+					
+					byte type = buffer.get(); // read a byte
+					
+					if(type == PORT_SCAN)
+					{
+						System.out.println("It is a port scan, sending name of the game");
+						buffer.clear(); // prepare for writing
+						buffer.putInt(hostPlayer.getName().length()); // Put an int
+						
+						for(char c : hostPlayer.getName().toCharArray())
+							buffer.putChar(c);
+						buffer.flip(); // Prepare for reading
+						chan.write(buffer);
+						System.out.println("Done");
+						continue;
+					}
 					int numChars = buffer.getInt(); // Number of chars in the players name
 					StringBuilder nmBuilder = new StringBuilder("");
 					
@@ -110,6 +157,33 @@ public class HostNetworking extends PacmanNetworking {
 					
 					System.out.println("Name-Length: " + numChars +"; Name: " + nmBuilder);
 					
+					int numPlayers = connectedPlayers.size();
+					
+					buffer.clear(); // Prepare for writing
+					buffer.put((byte) numPlayers); // Tell them how many players to expect
+					System.out.println("Number of players: " + numPlayers);
+					int counter = 0;
+					for(Player pl : connectedPlayers)
+					{
+						buffer.putInt(pl.getName().length()); // Length of name
+						System.out.println("Length of the name of player #" + counter + ": " + pl.getName().length());
+						numChars = pl.getName().length();
+						for(int i = 0; i < numChars; i++)
+						{
+							buffer.putChar(pl.getName().charAt(i));
+						}
+						System.out.println("Name: " + pl.getName());
+						counter++;
+					}
+					
+					// GameMode, max players and number of ghosts
+					buffer.put((byte) MultiplayerData.indexOf(gameMode));
+					buffer.put((byte) maxPlayers);
+					buffer.put((byte) numGhosts);
+					
+					buffer.flip(); // Prepare for reading
+					System.out.println("Buffer size: " + buffer);
+					chan.write(buffer); // Write the buffer
 					// Other data would be read here
 					
 					chan.configureBlocking(false);
@@ -136,5 +210,20 @@ public class HostNetworking extends PacmanNetworking {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void kickPlayer(Player player) {
+		Packet kickPacket = new PlayerPacket(player, CLIENT_DISCONNECTED, ByteBuffer.allocate(5));
+		processQueue.add(kickPacket);
+		sendQueue.add(kickPacket);
+	}
+
+	public void startGame() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Player getHost() {
+		return hostPlayer;
 	}
 }

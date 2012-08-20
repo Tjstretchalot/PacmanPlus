@@ -151,6 +151,9 @@ public class PathStep {
 		if (parent == null) {
 			return 0.0;
 		}
+		
+		if(parent.parent == this)
+			return  1.0 + .5 * (parent.parentCost - 1.0);
 
 		if (parentCost == 0.0) {
 			parentCost = 1.0 + .5 * (parent.getParentCost() - 1.0);

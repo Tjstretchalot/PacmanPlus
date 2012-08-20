@@ -1,6 +1,7 @@
 package tim.pacman.impl;
 
 import java.awt.geom.Rectangle2D;
+import java.util.Timer;
 import java.util.TimerTask;
 
 import org.newdawn.slick.GameContainer;
@@ -26,20 +27,22 @@ public class TagMode extends AbstractGameMode {
 												// forcibly made it.
 	private static final long GAME_TIME = 120;
 	
-	private final TimerTask PL1_BOOST = new TimerTask() {
+	private final Runnable PL1_BOOST = new TimerTask() {
 
 		@Override
 		public void run() {
 			player1Modifier = 0.25f;
+			cancel();
 		}
 		
 	};
 	
-	private final TimerTask PL2_BOOST = new TimerTask() {
+	private final Runnable PL2_BOOST = new TimerTask() {
 
 		@Override
 		public void run() {
 			player2Modifier = 0.25f;
+			cancel();
 		}
 		
 	};
@@ -81,13 +84,19 @@ public class TagMode extends AbstractGameMode {
 			if(player1It)
 			{
 				player1Modifier = 0.5f;
-				timer.schedule(PL1_BOOST, 500);
 			}else
 			{
 				player2Modifier = 0.5f;
-				timer.schedule(PL2_BOOST, 500);
 			}
 			
+		}
+		
+		if(time >= speedBoostEnds && (player1Modifier == 0.5f || player2Modifier == 0.5f))
+		{
+			if(player1It)
+				PL1_BOOST.run();
+			else
+				PL2_BOOST.run();
 		}
 		// Increase the speed for the person who is it a little
 //		if (player1It) {
@@ -138,6 +147,26 @@ public class TagMode extends AbstractGameMode {
 			if (PacmanApplication.getTime() <= speedBoostEnds) {
 				pl.getLocation().x -= pl.getVelocity().x * 0.45;
 				pl.getLocation().y -= pl.getVelocity().y * 0.45;
+			}
+		}
+	}
+	
+	@Override
+	public void onPlayerCollide(long time)
+	{
+		if (player1It) {
+			player1.getLocation().x += player1.getVelocity().x * 0.1f;
+			player1.getLocation().y += player1.getVelocity().y * 0.1f;
+
+			if (time < speedBoostEnds) {
+				player2.getLocation().x += player2.getVelocity().x * 0.45f;
+			}
+		} else {
+			player2.getLocation().x += player2.getVelocity().x * 0.1f;
+			player2.getLocation().y += player2.getVelocity().y * 0.1f;
+
+			if (time < speedBoostEnds) {
+				player1.getLocation().x += player1.getVelocity().x * 0.45f;
 			}
 		}
 	}

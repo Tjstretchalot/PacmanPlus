@@ -7,10 +7,13 @@ import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glVertex2f;
 import static tim.pacman.PacmanApplication.drawCenteredHText;
 import static tim.pacman.PacmanApplication.drawCenteredText;
+import static tim.pacman.impl.multiplayer.MultiplayerData.MULTIPLAYER_MODES;
 import static org.lwjgl.input.Keyboard.*;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.JOptionPane;
 
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
@@ -35,16 +38,7 @@ import tim.pacman.network.LANGame;
  */
 public class PrepareHostGui implements Gui {
 	private static boolean addedDelims;
-	public static final String[] MULTIPLAYER_MODES = new String[] {
-		"Free For All",
-		"Everyone fights it out to reach 1000 points",
-		
-		"Built to Last",
-		"Avoid ghosts while attempting to get points before running out of respawns",
-		
-		"Tag Mode",
-		"A friendly game of tag"
-	};
+	
 	
 	private List<LANGame> games;
 	private byte currentOption;
@@ -56,6 +50,7 @@ public class PrepareHostGui implements Gui {
 	private boolean blinkOn;
 	private long blinkSwitch;
 	private long canSwitch;
+	private String currentName;
 	
 	
 	public PrepareHostGui()
@@ -64,7 +59,7 @@ public class PrepareHostGui implements Gui {
 		mode = 0;
 		maxPlayers = 3;
 		numGhosts = 1;
-		
+		currentName = "Player " + (PacmanApplication.getRND().nextInt(999) + 1);
 		
 	}
 	
@@ -130,6 +125,21 @@ public class PrepareHostGui implements Gui {
 		drawCenteredText(graphics, msg, y);
 		y += 50f;
 		
+		boolean chName = drawCenteredHText(graphics, "Name: " + currentName, y);
+		if(chName && chScreen)
+		{
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					currentName = JOptionPane.showInputDialog(null, "What should your name be?");
+				}
+				
+			}).start();
+			PacmanApplication.application.setLastChange(PacmanApplication.getTime());
+		}
+		y += 50f;
+		
 		boolean done = drawCenteredHText(graphics, "Done", y);
 		if(done && chScreen)
 		{
@@ -149,7 +159,8 @@ public class PrepareHostGui implements Gui {
 				break;
 			}
 			
-			PacmanApplication.application.setGUI(new HostGui(gMode, this));
+			PacmanApplication.application.setGUI(new LobbyGui(gMode, true, MULTIPLAYER_MODES[mode * 2], 
+					MULTIPLAYER_MODES[mode * 2 + 1], numGhosts, maxPlayers, currentName, this));
 		}
 		
 		y += 50f;

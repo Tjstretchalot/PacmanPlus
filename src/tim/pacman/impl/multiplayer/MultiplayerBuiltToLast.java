@@ -12,4 +12,10 @@ public class MultiplayerBuiltToLast extends AbstractMultiplayerGameMode {
 	public void doTick(long time, long delta) {
 		super.doTick(time, delta);
 	}
+
+	@Override
+	public boolean isGameOver() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
