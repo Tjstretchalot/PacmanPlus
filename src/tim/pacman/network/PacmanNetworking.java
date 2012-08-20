@@ -114,12 +114,12 @@ public abstract class PacmanNetworking implements GameControls {
 		return connectedPlayers;
 	}
 
-	public static ClientNetworking doConnect(LANGame game, Gui gui) {
+	public static ClientNetworking doConnect(LANGame game, String playerName, Gui gui) {
 		System.out.println("Connecting to " + game);
-		ClientNetworking clientNetworking = new ClientNetworking(game);
+		ClientNetworking clientNetworking = new ClientNetworking(game.getAddress(), playerName);
 		System.out.println("Success");
 		
-		LobbyGui lobby = new LobbyGui(clientNetworking.gameMode, false, 
+		LobbyGui lobby = new LobbyGui(clientNetworking, clientNetworking.gameMode, false, 
 				MultiplayerData.nameOf(clientNetworking.gameMode), MultiplayerData.infoOf(clientNetworking.gameMode),
 				clientNetworking.numberOfGhosts, clientNetworking.numberOfPlayers, "Player " + (PacmanApplication.getRND().nextInt(999) + 1), gui);
 		PacmanApplication.application.setGUI(lobby);

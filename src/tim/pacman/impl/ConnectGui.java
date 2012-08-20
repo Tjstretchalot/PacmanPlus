@@ -11,6 +11,8 @@ import static tim.pacman.PacmanApplication.drawCenteredText;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.SlickException;
@@ -32,6 +34,7 @@ public class ConnectGui implements Gui {
 	private Thread searchThread;
 	private long timeUntilDotChange;
 	private String dots;
+	private String playerName;
 	
 	public ConnectGui()
 	{
@@ -46,6 +49,7 @@ public class ConnectGui implements Gui {
 		});
 		searchThread.start();
 		dots = "";
+		playerName = "Player " + (PacmanApplication.getRND().nextInt(999) + 1);
 	}
 	
 	@Override
@@ -67,7 +71,22 @@ public class ConnectGui implements Gui {
 			glVertex2f(64f, 148f);
 		glEnd();
 		
-		float y = 200;
+		float y = 175;
+		
+		boolean chName = drawCenteredHText(graphics, "Name: " + playerName, y);
+		if(chName && chScreen)
+		{
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					playerName = JOptionPane.showInputDialog(null, "What should your name be?");
+				}
+				
+			}).start();
+			PacmanApplication.application.setLastChange(PacmanApplication.getTime());
+		}
+		y += 50f;
 		if(searchThread.isAlive())
 		{
 			drawCenteredText(graphics, "Scanning" + dots, y);
@@ -75,8 +94,8 @@ public class ConnectGui implements Gui {
 		}
 		if(games.size() == 0)
 		{
-			y += 25;
 			drawCenteredText(graphics, "No games found..", y);
+			y += 25;
 		}
 		for(LANGame game : games)
 		{
@@ -86,7 +105,7 @@ public class ConnectGui implements Gui {
 			{
 				if(searchThread.isAlive())
 					searchThread.suspend();
-				PacmanNetworking.doConnect(game, this);
+				PacmanNetworking.doConnect(game, playerName, this);
 			}
 		}
 		

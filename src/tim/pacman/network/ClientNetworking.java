@@ -54,7 +54,7 @@ public class ClientNetworking extends PacmanNetworking {
 				connectedPlayers.add(new ClientMP(name, 0, 0));
 			}
 			
-			System.out.println("Finished. Players: " + connectedPlayers);
+			System.out.println("Finished. Players: " + getPlayers());
 		}catch(IOException exc)
 		{
 			System.err.println("Failed to initialize client networking: " + exc.getMessage());

@@ -19,6 +19,7 @@ import tim.pacman.Gui;
 import tim.pacman.PacmanApplication;
 import tim.pacman.Player;
 import tim.pacman.network.HostNetworking;
+import tim.pacman.network.PacmanNetworking;
 
 /**
  * The gui for attempting to find and connect to 
@@ -28,7 +29,7 @@ import tim.pacman.network.HostNetworking;
  * @author Timothy
  */
 public class LobbyGui implements Gui {
-	private HostNetworking network;
+	private PacmanNetworking network;
 	private GameMode gameMode;
 	private Gui previousGUI;
 	private Player playerSelected;
@@ -39,10 +40,10 @@ public class LobbyGui implements Gui {
 	private boolean addedDelims;
 	private boolean host;
 	
-	public LobbyGui(GameMode gameMode, boolean host, String mode, String modeInfo, 
+	public LobbyGui(PacmanNetworking network, GameMode gameMode, boolean host, String mode, String modeInfo, 
 			int numGhosts, int maxPlayers, String plName, Gui previousGUI)
 	{
-		network = new HostNetworking(gameMode, maxPlayers, numGhosts, plName);
+		this.network = network;
 		this.gameMode = gameMode;
 		this.previousGUI = previousGUI;
 		this.numGhosts = numGhosts;
@@ -92,7 +93,7 @@ public class LobbyGui implements Gui {
 				boolean kick = drawHighlightableText(graphics, "Kick Player", x, y);
 				if(kick && clickable)
 				{
-					network.kickPlayer(playerSelected);
+					((HostNetworking) network).kickPlayer(playerSelected);
 				}
 			}else
 				drawText(graphics, "Kick Player", x, y);
@@ -104,7 +105,7 @@ public class LobbyGui implements Gui {
 
 				if(start && clickable)
 				{
-					network.startGame();
+					((HostNetworking) network).startGame();
 					// TODO Game mode etc..
 				}
 			}else
@@ -114,9 +115,9 @@ public class LobbyGui implements Gui {
 		
 		y += 50;
 		boolean back = drawHighlightableText(graphics, "Go Back", x, y);
-		if(back && clickable)
+		if(back && clickable && host)
 		{
-			network.cleanup();
+			((HostNetworking) network).cleanup();
 			PacmanApplication.application.setGUI(previousGUI);
 		}
 		
@@ -132,7 +133,7 @@ public class LobbyGui implements Gui {
 			for(Player pl : network.getPlayers())
 			{
 				boolean select = PacmanApplication.drawCenteredHText(graphics, pl.getName(), leftX, rightX, y);
-				if(select && clickable && pl != network.getHost())
+				if(select && clickable)
 					playerSelected = pl;
 				y += 25f;
 			}

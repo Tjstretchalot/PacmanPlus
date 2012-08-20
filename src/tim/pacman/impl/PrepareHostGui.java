@@ -27,6 +27,7 @@ import tim.pacman.impl.ai.AStarGameMap;
 import tim.pacman.impl.multiplayer.FreeForAllMode;
 import tim.pacman.impl.multiplayer.MultiplayerBuiltToLast;
 import tim.pacman.impl.multiplayer.MultiplayerTagMode;
+import tim.pacman.network.HostNetworking;
 import tim.pacman.network.LANGame;
 
 /**
@@ -159,7 +160,7 @@ public class PrepareHostGui implements Gui {
 				break;
 			}
 			
-			PacmanApplication.application.setGUI(new LobbyGui(gMode, true, MULTIPLAYER_MODES[mode * 2], 
+			PacmanApplication.application.setGUI(new LobbyGui(new HostNetworking(gMode, maxPlayers, numGhosts, currentName), gMode, true, MULTIPLAYER_MODES[mode * 2], 
 					MULTIPLAYER_MODES[mode * 2 + 1], numGhosts, maxPlayers, currentName, this));
 		}
 		

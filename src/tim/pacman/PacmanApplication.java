@@ -514,7 +514,7 @@ public class PacmanApplication extends BasicGame {
 	 * Draws centered text where leftX is the left 
 	 * of the center and right x is the right of the screen
 	 * @param graphics the graphics
-	 * @param string the string
+	 * @param txt the string
 	 * @param leftX left x
 	 * @param rightX right x
 	 */
