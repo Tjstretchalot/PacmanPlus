@@ -27,4 +27,11 @@ public class Packet {
 	public void setData(ByteBuffer data) {
 		this.data = data;
 	}
+
+	@Override
+	public String toString() {
+		return "Packet [type=" + type + ", data=" + data + "]";
+	}
+	
+	
 }

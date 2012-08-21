@@ -42,19 +42,21 @@ public class ClientNetworking extends PacmanNetworking {
 		super();
 		address = inetAddress;
 		theBuffer = ByteBuffer.allocate(1028);
+		running = true;
 		System.out.println("Client created: " + name + " at " + inetAddress);
 		this.name = name;
-		
+		localPlayer = new ClientMP(name, 0, 0);
 		try
 		{
 			initializeConnection();
+			initializeThreads();
 			
 			synchronized(connectedPlayers)
 			{
-				connectedPlayers.add(new ClientMP(name, 0, 0));
+				connectedPlayers.add(localPlayer);
 			}
 			
-			System.out.println("Finished. Players: " + getPlayers());
+//			System.out.println("Finished. Players: " + getPlayers());
 		}catch(IOException exc)
 		{
 			System.err.println("Failed to initialize client networking: " + exc.getMessage());
@@ -63,6 +65,22 @@ public class ClientNetworking extends PacmanNetworking {
 			Sys.alert("An error occurred", exc.getMessage());
 			System.exit(0);
 		}
+		
+		Thread onShutdown = new Thread(new Runnable() {
+			@Override
+			public void run()
+			{
+				if(running)
+					disconnect();
+			}
+		});
+	}
+
+	private void initializeThreads() {
+		mPacketReciever = new PacketRecieverImpl(this);
+		mPacketSender = new PacketSenderImpl(this);
+		mPacketReciever.start();
+		mPacketSender.start();
 	}
 
 	public ClientNetworking(LANGame game) {
@@ -88,14 +106,14 @@ public class ClientNetworking extends PacmanNetworking {
 		connection.read(buffer);
 		
 		buffer.flip(); // Prepare for reading
-		System.out.println("Read " + buffer.remaining() + " bytes");
+//		System.out.println("Read " + buffer.remaining() + " bytes");
 		int numPlayers = buffer.get();
 		System.out.println("Number of players: " + numPlayers);
 		
 		for(int i = 0; i < numPlayers; i++)
 		{
 			int numChars = buffer.getInt();
-			System.out.println("Length of the name of player #" + i + ": " + numChars);
+//			System.out.println("Length of the name of player #" + i + ": " + numChars);
 			StringBuilder res = new StringBuilder("");
 			for(int j = 0; j < numChars; j++)
 				res.append(buffer.getChar());
@@ -114,6 +132,18 @@ public class ClientNetworking extends PacmanNetworking {
 		gameMode = MultiplayerData.createInstance(mode, numberOfGhosts, gameMap);
 		
 		connection.configureBlocking(false);
+		getPlayerChannels().add(connection);
+	}
+	
+	@Override
+	public void doTick(long time)
+	{
+		if(processQueue.size() > 0)
+		{
+			System.out.println("Processing " + processQueue.size() + " packets.");
+			while(processQueue.size() > 0)
+				process(processQueue.poll());
+		}
 	}
 
 	/**
@@ -237,6 +267,27 @@ public class ClientNetworking extends PacmanNetworking {
 	 * @param packet the packet
 	 */
 	protected void processClientDisconnected(Packet packet) {
+		ByteBuffer data = packet.getData();
+		int ind = data.get();
+		
+		if(ind == 0)
+		{
+			System.err.println("Host ended server!");
+			running = false;
+			return;
+		}
+		
+		// Is it this guy?
+		
+		Player pla = getPlayers().get(ind);
+		if(pla == getLocalPlayer())
+		{
+			System.err.println("Forcibly kicked from the server!");
+			running = false;
+			return;
+		}
+		System.err.println(pla.getName() + " disconnected.");
+		getPlayers().remove(pla);
 	}
 
 	/**
@@ -244,10 +295,24 @@ public class ClientNetworking extends PacmanNetworking {
 	 * @param packet the packet
 	 */
 	protected void processClientConnected(Packet packet) {
+		System.out.println("Client Connected -- Processing");
+		ByteBuffer data = packet.getData();
+		int len = data.getInt();
+		StringBuilder nmBuilder = new StringBuilder(len);
+		
+		for(int i = 0; i < len; i++)
+		{
+			nmBuilder.append(data.getChar());
+		}
+		String nm = nmBuilder.toString();
+		System.out.println("  Name: " + nm);
+		Player player = new Player(nm, 0f, 0f);
+		getPlayers().add(player);
 	}
 
 	public void disconnect() {
 		try {
+			running = false;
 			theBuffer.clear();
 			theBuffer.put(CLIENT_DISCONNECTED);
 			theBuffer.flip();

@@ -81,6 +81,8 @@ public abstract class PacmanNetworking implements GameControls {
 
 	public volatile boolean running;
 
+	protected Player localPlayer;
+
 
 	public PacmanNetworking() {
 		processQueue = new ArrayBlockingQueue<Packet>(QUEUE_SIZE);
@@ -112,6 +114,14 @@ public abstract class PacmanNetworking implements GameControls {
 
 	public List<Player> getPlayers() {
 		return connectedPlayers;
+	}
+	
+	public List<String> getPlayerNames() {
+		List<String> res = new ArrayList<String>(connectedPlayers.size());
+		
+		for(Player pl : connectedPlayers)
+			res.add(pl.getName());
+		return res;
 	}
 
 	public static ClientNetworking doConnect(LANGame game, String playerName, Gui gui) {
@@ -203,5 +213,9 @@ public abstract class PacmanNetworking implements GameControls {
 		System.out.println("Severing connection");
 		chan.close(); // Close the channel
 		return game;
+	}
+
+	public Player getLocalPlayer() {
+		return localPlayer;
 	}
 }

@@ -21,14 +21,35 @@ public abstract class PacketSender extends Thread {
 		this.networking = networking;
 	}
 	
+	@Override
+	public void run()
+	{
+		while(networking.running)
+		{
+			if(networking.getSendQueue().size() > 0)
+			{
+				int numPlayers = networking.getPlayers().size() - 1;
+				System.out.println("Sending " + networking.getSendQueue().size() + " packet(s) to ~" +
+						numPlayers + " players.");
+				sendAllQueued();
+			}
+			try {
+				Thread.sleep(35);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+	}
+	
 	/**
 	 * Sends all the queued packets
 	 */
 	public void sendAllQueued()
 	{
 		while(networking.getSendQueue().size() > 0)
-			sendPacket(networking.getSendQueue().poll());
+			sendPacket((PlayerPacket) networking.getSendQueue().poll());
 	}
 
-	protected abstract void sendPacket(Packet packet);
+	protected abstract void sendPacket(PlayerPacket packet);
 }

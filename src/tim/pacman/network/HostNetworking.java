@@ -34,11 +34,14 @@ public class HostNetworking extends PacmanNetworking {
 		this.maxPlayers = maxPlayers;
 		this.numGhosts = numGhosts;
 		
+		hostPlayer = new ClientMP(playerName, 0, 0);
+		localPlayer = hostPlayer;
+		
 		System.out.println("Host created: " + gameMode.getClass().getSimpleName() + ", " + maxPlayers +
 				", " + numGhosts + ", " + playerName);
 		initializeChannel();
 		initializeThreads();
-		hostPlayer = new ClientMP(playerName, 0, 0);
+		
 		connectedPlayers.add(hostPlayer);
 	}
 
@@ -76,8 +79,16 @@ public class HostNetworking extends PacmanNetworking {
 				System.out.println("Client #" + (ind + 1) + " [" + pla.getName() + 
 						"] disconnected: Left Server");
 				
+				ByteBuffer buffer = ByteBuffer.allocate(1028);
+				buffer.put(CLIENT_DISCONNECTED);
+				buffer.put((byte) ind);
+				
+				Packet sendPacket = new PlayerPacket(pla, true, CLIENT_DISCONNECTED, buffer);
+				sendQueue.add(sendPacket);
 				getPlayers().remove(ind);
 				getPlayerChannels().remove(ind - 1);
+				
+				
 				break;
 			default:
 				System.err.println("Odd type retrieved: " + packet.getType());
@@ -155,24 +166,24 @@ public class HostNetworking extends PacmanNetworking {
 						nmBuilder.append(buffer.getChar());
 					}
 					
-					System.out.println("Name-Length: " + numChars +"; Name: " + nmBuilder);
+					System.out.println("Name: " + nmBuilder);
 					
 					int numPlayers = connectedPlayers.size();
 					
 					buffer.clear(); // Prepare for writing
 					buffer.put((byte) numPlayers); // Tell them how many players to expect
-					System.out.println("Number of players: " + numPlayers);
+//					System.out.println("Number of players: " + numPlayers);
 					int counter = 0;
 					for(Player pl : connectedPlayers)
 					{
 						buffer.putInt(pl.getName().length()); // Length of name
-						System.out.println("Length of the name of player #" + counter + ": " + pl.getName().length());
+//						System.out.println("Length of the name of player #" + counter + ": " + pl.getName().length());
 						numChars = pl.getName().length();
 						for(int i = 0; i < numChars; i++)
 						{
 							buffer.putChar(pl.getName().charAt(i));
 						}
-						System.out.println("Name: " + pl.getName());
+//						System.out.println("Name: " + pl.getName());
 						counter++;
 					}
 					
@@ -182,15 +193,24 @@ public class HostNetworking extends PacmanNetworking {
 					buffer.put((byte) numGhosts);
 					
 					buffer.flip(); // Prepare for reading
-					System.out.println("Buffer size: " + buffer);
+//					System.out.println("Buffer size: " + buffer);
 					chan.write(buffer); // Write the buffer
 					// Other data would be read here
 					
 					chan.configureBlocking(false);
 					
 					Player player = new Player(nmBuilder.toString(), 0, 0);
+					buffer.clear();
+					buffer.put(CLIENT_CONNECTED);
+					buffer.putInt(player.getName().length());
+					for(int i = 0; i < player.getName().length(); i++)
+						buffer.putChar(player.getName().charAt(i));
+					
 					getPlayers().add(player);
 					getPlayerChannels().add(chan);
+					
+					Packet packet = new PlayerPacket(player, false, CLIENT_CONNECTED, buffer);
+					sendQueue.add(packet);
 				}catch(IOException exc)
 				{
 					System.err.println("An error occurred accepting connection: " + exc.getMessage());
@@ -213,7 +233,7 @@ public class HostNetworking extends PacmanNetworking {
 	}
 
 	public void kickPlayer(Player player) {
-		Packet kickPacket = new PlayerPacket(player, CLIENT_DISCONNECTED, ByteBuffer.allocate(5));
+		Packet kickPacket = new PlayerPacket(player, true, CLIENT_DISCONNECTED, ByteBuffer.allocate(5));
 		processQueue.add(kickPacket);
 		sendQueue.add(kickPacket);
 	}

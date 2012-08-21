@@ -11,7 +11,7 @@ public class PacketSenderImpl extends PacketSender {
 	}
 
 	@Override
-	protected void sendPacket(Packet packet) {
+	protected void sendPacket(PlayerPacket packet) {
 		ByteBuffer buffer = packet.getData();
 		buffer.flip(); // presumably we just wrote into this, flip it
 		synchronized(networking)
@@ -20,8 +20,12 @@ public class PacketSenderImpl extends PacketSender {
 			{
 				if(!networking.running)
 					return;
+				if(packet.getPlayer() == networking.getPlayers().get(i + 1) && !packet.sendToPlayer())
+					continue;
 				SocketChannel conn = networking.getPlayerChannels().get(i);
+				
 				try {
+					System.out.println("Writing " + buffer + " to " + networking.getPlayerNames().get(i + 1));
 					conn.write(buffer);
 				} catch (IOException e) {
 					System.err.println("Problem writing to channel #" + i + ": " + e.getCause());

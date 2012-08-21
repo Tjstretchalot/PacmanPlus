@@ -165,7 +165,7 @@ public class LobbyGui implements Gui {
 
 	@Override
 	public void update(GameContainer cont, int delta) {
-		
+		network.doTick(PacmanApplication.getTime());
 	}
 
 }

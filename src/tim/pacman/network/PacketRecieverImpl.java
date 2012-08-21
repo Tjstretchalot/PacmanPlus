@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class PacketRecieverImpl extends PacketReciever {
-
+	
 	public PacketRecieverImpl(PacmanNetworking networking) {
 		super(networking);
 	}
@@ -19,6 +19,7 @@ public class PacketRecieverImpl extends PacketReciever {
 		{
 			synchronized(networking)
 			{
+				//System.out.println("[" + networking.getLocalPlayer().getName() + "] Checking channels for new messages...");
 				for(int i = 0; i < networking.getPlayerChannels().size(); i++)
 				{
 					if(!networking.running)
@@ -35,8 +36,9 @@ public class PacketRecieverImpl extends PacketReciever {
 						System.out.println(buffer);
 						byte type = buffer.get(); // read the type.
 						System.out.println(type);
-						Packet packet = new PlayerPacket(networking.getPlayers().get(i + 1), type, buffer);
-						System.out.println("Recieved packet from " + networking.getPlayers().get(i + 1).getName());
+						Packet packet = new PlayerPacket(networking.getPlayers().get(i + 1), false, type, buffer);
+						int from = networking instanceof HostNetworking ? i + 1 : i;
+						System.out.println("Recieved packet from " + networking.getPlayers().get(from).getName() + ": " + packet);
 						buffer = ByteBuffer.allocate(1028);
 						networking.processQueue.add(packet);
 					}catch(Exception exc)
@@ -54,6 +56,13 @@ public class PacketRecieverImpl extends PacketReciever {
 						exc.printStackTrace();
 					}
 				}
+			}
+			
+			try {
+				Thread.sleep(35);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				return;
 			}
 		}
 	}
