@@ -13,9 +13,20 @@ public class ClientMP extends Player {
 		}
 
 	};
+	
+	private boolean prepared;
 
 	public ClientMP(String nm, float x, float y) {
 		super(nm, x, y);
+	}
+
+	public boolean isPrepared() {
+		return prepared;
+	}
+	
+	public void setPrepared(boolean b)
+	{
+		prepared = b;
 	}
 
 }

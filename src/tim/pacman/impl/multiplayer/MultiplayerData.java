@@ -2,6 +2,7 @@ package tim.pacman.impl.multiplayer;
 
 import tim.pacman.GameMode;
 import tim.pacman.impl.ai.AStarGameMap;
+import tim.pacman.network.PacmanNetworking;
 
 public class MultiplayerData {
 	public static final String[] MULTIPLAYER_MODES = new String[] {
@@ -38,15 +39,15 @@ public class MultiplayerData {
 		throw new AssertionError("Unknown type '" + gameMode.getClass().getName() + "'");
 	}
 
-	public static GameMode createInstance(byte b, int numGhosts, AStarGameMap gameMap) {
+	public static AbstractMultiplayerGameMode createInstance(byte b, PacmanNetworking networking, int numGhosts, AStarGameMap gameMap) {
 		switch(b)
 		{
 		case 0:
-			return new FreeForAllMode(gameMap, numGhosts);
+			return new FreeForAllMode(gameMap, networking, numGhosts);
 		case 1:
-			return new MultiplayerBuiltToLast(gameMap, numGhosts);
+			return new MultiplayerBuiltToLast(gameMap, networking, numGhosts);
 		case 2:
-			return new MultiplayerTagMode(gameMap, numGhosts);
+			return new MultiplayerTagMode(gameMap, networking, numGhosts);
 		}
 		return null;
 	}

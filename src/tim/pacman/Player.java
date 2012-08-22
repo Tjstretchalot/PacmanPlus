@@ -196,13 +196,22 @@ public class Player {
 			return false;
 		Player other = (Player) obj;
 		if(other.location.x != location.x)
+		{
+			System.out.println("X-Coordinate's are not equal [" + other.location.x + " vs " + location.x + "]");
 			return false;
-		else if(other.location.y != location.y)
+		}else if(other.location.y != location.y)
+		{
+			System.err.println("Y-Coordinate's are not equal");
 			return false;
-		else if(other.score != score)
+		}else if(other.score != score)
+		{
+			System.err.println("Scores are not equal");
 			return false;
-		else if(!other.getName().equals(getName()))
+		}else if(!other.getName().equals(getName()))
+		{
+			System.err.println("Names are not equal");
 			return false;
+		}
 		return true;
 	}
 

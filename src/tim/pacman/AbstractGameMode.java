@@ -381,6 +381,12 @@ public abstract class AbstractGameMode implements GameMode {
 		PacmanApplication.application.setGUI(new GameOver(getLeader(),
 				getLoser()));
 	}
+	
+	@Override
+	public GameMap getGameMap()
+	{
+		return gameMap;
+	}
 
 	/**
 	 * Called when the players collide with each other

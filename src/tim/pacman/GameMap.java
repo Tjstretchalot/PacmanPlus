@@ -11,6 +11,8 @@ import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 
+import tim.pacman.impl.multiplayer.ClientMP;
+
 /**
  * The game map, with a static array of the default
  * map. Contains convenience methods for going to and
@@ -46,6 +48,11 @@ public class GameMap {
 	 */
 	public static final byte SPAWNER = 4;
 	
+	/**
+	 * A grid location that allows player spawns, colored green on the map
+	 */
+	public static final byte PLAYER_SPAWNER = 5;
+	
 	
 	private static final byte[][] BASIC_MAP_ARRAY = new byte[][] {
 		new byte[] {
@@ -54,8 +61,8 @@ public class GameMap {
 		},
 		
 		new byte[] {
-				WALL, ORB, ORB, ORB, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, WALL,
-				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, ORB, ORB, ORB, WALL
+				WALL, ORB, ORB, ORB, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, PLAYER_SPAWNER, WALL,
+				WALL, PLAYER_SPAWNER, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, ORB, ORB, ORB, WALL
 		},
 		
 		new byte[] {
@@ -89,8 +96,8 @@ public class GameMap {
 		},
 		
 		new byte[] {
-				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, WALL,
-				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, EMPTY, WALL
+				WALL, PLAYER_SPAWNER, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, WALL,
+				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, PLAYER_SPAWNER, WALL
 		},
 		
 		new byte[] {
@@ -134,8 +141,8 @@ public class GameMap {
 		},
 		
 		new byte[] {
-				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, WALL,
-				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, EMPTY, WALL
+				WALL, PLAYER_SPAWNER, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, WALL,
+				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, EMPTY, EMPTY, EMPTY, PLAYER_SPAWNER, WALL
 		},
 		
 		new byte[] {
@@ -169,8 +176,8 @@ public class GameMap {
 		},
 		
 		new byte[] {
-				WALL, ORB, ORB, ORB, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, WALL,
-				WALL, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, ORB, ORB, ORB, WALL
+				WALL, ORB, ORB, ORB, ORB, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, PLAYER_SPAWNER, WALL,
+				WALL, PLAYER_SPAWNER, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, ORB, ORB, ORB, ORB, WALL
 		},
 		
 		new byte[] {
@@ -238,6 +245,11 @@ public class GameMap {
 					break;
 				case SPAWNER:
 					g.setColor(Color.red.darker(0.5f));
+					g.fillRect(x + 1, y + 1, width, height);
+					g.setColor(Color.white);
+					break;
+				case PLAYER_SPAWNER:
+					g.setColor(Color.green.darker(0.5f));
 					g.fillRect(x + 1, y + 1, width, height);
 					g.setColor(Color.white);
 					break;
@@ -445,6 +457,33 @@ public class GameMap {
 		int ran = PacmanApplication.getRND().nextInt(poss.size());
 		return poss.get(ran);
 	}
+	
+	/**
+	 * Chooses a random grid location with the specified type that 
+	 * is not filled by any of the specified entities
+	 * @param entities the list of entities
+	 * @param types the number of types
+	 * @return an acceptable, psuedorandom grid location or null if none are available
+	 */
+	public Point chooseRandomUnfilled(List<Player> entities, byte... types)
+	{
+		List<Point> poss = getAll(types);
+		
+		for(int i = 0; i < poss.size(); i++)
+		{
+			Point p = poss.get(i);
+			for(Player pl : entities)
+			{
+				Point grid = toGridLocation(pl.getLocation());
+				if(grid.equals(p))
+					poss.remove(p);
+			}
+		}
+		if(poss.size() == 0)
+			return null;
+		int ran = PacmanApplication.getRND().nextInt(poss.size());
+		return poss.get(ran);
+	}
 
 	/**
 	 * Returns the grid location contained by the specified x and y coordinate
@@ -457,6 +496,25 @@ public class GameMap {
 		int locationY = Math.round((y - 32) / 16f);
 		
 		return new Point(locationX, locationY);
+	}
+
+	public Point chooseRandomUnfilledMP(List<ClientMP> entities, byte... types) {
+		List<Point> poss = getAll(types);
+		
+		for(int i = 0; i < poss.size(); i++)
+		{
+			Point p = poss.get(i);
+			for(Player pl : entities)
+			{
+				Point grid = toGridLocation(pl.getLocation());
+				if(grid.equals(p))
+					poss.remove(p);
+			}
+		}
+		if(poss.size() == 0)
+			return null;
+		int ran = PacmanApplication.getRND().nextInt(poss.size());
+		return poss.get(ran);
 	}
 
 }

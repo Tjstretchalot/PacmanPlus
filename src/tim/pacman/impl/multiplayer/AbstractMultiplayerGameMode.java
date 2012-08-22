@@ -3,6 +3,8 @@ package tim.pacman.impl.multiplayer;
 import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.awt.geom.Point2D.Float;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -15,30 +17,56 @@ import tim.pacman.GameMode;
 import tim.pacman.Ghost;
 import tim.pacman.PacmanApplication;
 import tim.pacman.Player;
+import tim.pacman.network.PacmanNetworking;
 
 public abstract class AbstractMultiplayerGameMode implements GameMode {
 	private int numberGhosts;
-	
-	private List<ClientMP> players;
 
+	private PacmanNetworking network;
+	
 	private GameMap gameMap;
 
 	private GhostMP[] ghosts;
 
 	private long gameTime;
 
-	private boolean justSorted;
+	private boolean waiting;
 
-	public AbstractMultiplayerGameMode(GameMap map, int numGhosts) {
+	private String dots;
+	
+	private long dotChange;
+
+	public AbstractMultiplayerGameMode(GameMap map, PacmanNetworking networking, int numGhosts) {
+		network = networking;
 		gameMap = map;
 		this.numberGhosts = numGhosts;
+		ghosts = new GhostMP[numberGhosts];
+		waiting = true;
+		dots = "";
 	}
 
 	@Override
 	public void doTick(long time, long delta) {
-		justSorted = false;
+		if(waiting)
+		{
+			dotChange -= delta;
+			if(dotChange <= 0)
+			{
+				dotChange = 500;
+				dots += ".";
+				if(dots.length() > 3)
+					dots = "";
+			}
+			return;
+		}
 		gameTime += delta;
 		movePlayers();
+	}
+	
+	@Override
+	public GameMap getGameMap()
+	{
+		return gameMap;
 	}
 
 	/**
@@ -46,15 +74,18 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 	 * if they are not blocked by anything
 	 */
 	protected void movePlayers() {
-		for(ClientMP client : players)
+		synchronized(network)
 		{
-			float newX = client.getLocation().x + client.getVelocity().x;
-			float newY = client.getLocation().y + client.getVelocity().y;
-			
-			if(isAcceptable(client, newX, newY))
+			for(ClientMP client : network.getPlayers())
 			{
-				client.getLocation().x = newX;
-				client.getLocation().y = newY;
+				float newX = client.getLocation().x + client.getVelocity().x;
+				float newY = client.getLocation().y + client.getVelocity().y;
+
+				if(isAcceptable(client, newX, newY))
+				{
+					client.getLocation().x = newX;
+					client.getLocation().y = newY;
+				}
 			}
 		}
 	}
@@ -63,7 +94,8 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 
 	protected boolean isAcceptable(ClientMP pl, float x, float y) {
 		Point onGrid = gameMap.toGridLocation(x, y);
-		
+		if(onGrid.x < 0)
+			return true;
 		return canWalkThrough(gameMap.getType(onGrid.x, onGrid.y), pl);
 	}
 
@@ -75,12 +107,15 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 	public Player getLeader() {
 		int highest = Integer.MIN_VALUE;
 		Player leader = null;
-		for(ClientMP player : players)
+		synchronized(network)
 		{
-			if(player.getScore() > highest)
+			for(ClientMP player : network.getPlayers())
 			{
-				leader = player;
-				highest = player.getScore();
+				if(player.getScore() > highest)
+				{
+					leader = player;
+					highest = player.getScore();
+				}
 			}
 		}
 		return leader;
@@ -103,14 +138,23 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 
 	@Override
 	public void doCustomRendering(GameContainer cont, Graphics g) {
-		for(ClientMP player : players)
+		if(waiting)
 		{
-			player.render(cont, g);
+			PacmanApplication.drawCenteredText(g, "Waiting for other players" + dots, 155);
+			return;
+		}
+		synchronized(network)
+		{
+			for(ClientMP player : network.getPlayers())
+			{
+				player.render(cont, g);
+			}
 		}
 		
 		for(GhostMP gh : ghosts)
 		{
-			gh.render(cont, g);
+			if(gh != null)
+				gh.render(cont, g);
 		}
 		
 		String left = getLeftMessage(), right = getRightMessage(), center = getCenterMessage();
@@ -138,8 +182,12 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 	 * @return top right message
 	 */
 	protected String getRightMessage() {
-		ClientMP player = getPlayerAt(3);
-		return "3rd: " + player.getName() + " at " + player.getScore();
+		if(network.getPlayers().size() >= 3)
+		{
+			ClientMP player = getPlayerAt(2);
+			return "3rd: " + player.getName() + " at " + player.getScore();
+		}
+		return "Nobody in 3rd";
 	}
 
 	/**
@@ -148,7 +196,7 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 	 * @return top left message
 	 */
 	protected String getLeftMessage() {
-		ClientMP player = getPlayerAt(2);
+		ClientMP player = getPlayerAt(1);
 		return "2cd: " + player.getName() + " at " + player.getScore();
 	}
 	
@@ -163,14 +211,9 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 	
 	private ClientMP getPlayerAt(int pos) {
 		// Order the list 
-		if(!justSorted)
-		{
-			Comparator<ClientMP> comp = ClientMP.COMPARATOR;
-		
-			Collections.sort(players, comp);
-			justSorted = true;
-		}
-		return players.get(pos);
+		List<ClientMP> temp = new ArrayList<ClientMP>(Arrays.asList(new ClientMP[network.getPlayers().size()]));
+		Collections.copy(temp, network.getPlayers());
+		return temp.get(pos);
 	}
 
 	@Override
@@ -234,5 +277,14 @@ public abstract class AbstractMultiplayerGameMode implements GameMode {
 	protected void onOrbCollect(Player pl)
 	{
 		pl.addToScore(10);
+	}
+
+	public boolean isWaiting()
+	{
+		return waiting;
+	}
+	
+	public void setWaiting(boolean b) {
+		waiting = b;
 	}
 }

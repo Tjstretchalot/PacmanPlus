@@ -12,9 +12,11 @@ import java.lang.reflect.Field;
 import java.util.Random;
 import java.util.Vector;
 
+import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.BasicGame;
 import org.newdawn.slick.Color;
@@ -144,6 +146,7 @@ public class PacmanApplication extends BasicGame {
 			Sys.alert(getTitle(), "Could not load resources - " + ex.getCause());
 			ex.printStackTrace();
 		}
+		application = this;
 		
 		gui = new MainMenuGui();
 		gameMode = null;

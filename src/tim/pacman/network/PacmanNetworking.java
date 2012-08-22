@@ -13,10 +13,12 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import tim.pacman.GameControls;
+import tim.pacman.GhostController;
 import tim.pacman.Gui;
 import tim.pacman.PacmanApplication;
 import tim.pacman.Player;
 import tim.pacman.impl.LobbyGui;
+import tim.pacman.impl.multiplayer.ClientMP;
 import tim.pacman.impl.multiplayer.MultiplayerData;
 
 /**
@@ -47,47 +49,50 @@ import tim.pacman.impl.multiplayer.MultiplayerData;
  * Also, a full player update is sent approximately once every 2 seconds.
  * @author Timothy
  */
-public abstract class PacmanNetworking implements GameControls {
+public abstract class PacmanNetworking implements GameControls, GhostController {
 	private static final int QUEUE_SIZE = 2000;
+	
+	public static final byte MARKER = 127;
 
 	public static final int PORT = 56642;
 
 	public static final byte CLIENT_CONNECTED = 0;
-	public static final byte CLIENT_DISCONNECTED = 1;
-	public static final byte PREPARE_GAME = 2;
-	public static final byte START_GAME = 3;
+	public static final byte CLIENT_DISCONNECTED = CLIENT_CONNECTED + 1; // 1
+	public static final byte PREPARE_GAME = CLIENT_DISCONNECTED + 1; // 2
+	public static final byte FINISHED_PREPARING = PREPARE_GAME + 1; // 3
+	public static final byte START_GAME = FINISHED_PREPARING + 1; // 4
 
 	/**
 	 * A full player update packet, where the players location,
 	 * name, velocity, direction and score are sent.
 	 */
-	public static final byte PLAYER_UPDATE = 4;
-	public static final byte PLAYER_DIRECTION_CHANGED = 5;
-	public static final byte PLAYER_VELOCITY_CHANGED = 6;
-	public static final byte PLAYER_SCORE_CHANGED = 7;
+	public static final byte PLAYER_UPDATE = START_GAME + 1; // 5
+	public static final byte PLAYER_DIRECTION_CHANGED = PLAYER_UPDATE + 1; // 6
+	public static final byte PLAYER_VELOCITY_CHANGED = PLAYER_DIRECTION_CHANGED + 1; // 7
+	public static final byte PLAYER_SCORE_CHANGED = PLAYER_VELOCITY_CHANGED + 1; // 8
 
-	public static final byte PLAYER_COLLIDED = 8;
+	public static final byte PLAYER_COLLIDED = PLAYER_SCORE_CHANGED + 1; // 9
 
-	public static final byte PORT_SCAN = 100;
+	public static final byte PORT_SCAN = PLAYER_COLLIDED + 1; // 10
 
 	protected Queue<Packet> processQueue;
-	protected Queue<Packet> sendQueue;
+	protected Queue<PlayerPacket> sendQueue;
 
 	protected PacketReciever mPacketReciever;
 	protected PacketSender mPacketSender;
 
-	protected List<Player> connectedPlayers; 
+	protected List<ClientMP> connectedPlayers; 
 	protected List<SocketChannel> playerChannels;
 
 	public volatile boolean running;
 
-	protected Player localPlayer;
+	protected ClientMP localPlayer;
 
 
 	public PacmanNetworking() {
 		processQueue = new ArrayBlockingQueue<Packet>(QUEUE_SIZE);
-		sendQueue = new ArrayBlockingQueue<Packet>(QUEUE_SIZE);
-		connectedPlayers = new ArrayList<Player>(5);
+		sendQueue = new ArrayBlockingQueue<PlayerPacket>(QUEUE_SIZE);
+		connectedPlayers = new ArrayList<ClientMP>(5);
 		playerChannels = new ArrayList<SocketChannel>(5);
 	}
 
@@ -104,7 +109,7 @@ public abstract class PacmanNetworking implements GameControls {
 		this.playerChannels = playerChannels;
 	}
 
-	Queue<Packet> getSendQueue() {
+	Queue<PlayerPacket> getSendQueue() {
 		return sendQueue;
 	}
 
@@ -112,7 +117,7 @@ public abstract class PacmanNetworking implements GameControls {
 		return processQueue;
 	}
 
-	public List<Player> getPlayers() {
+	public List<ClientMP> getPlayers() {
 		return connectedPlayers;
 	}
 	
@@ -215,7 +220,11 @@ public abstract class PacmanNetworking implements GameControls {
 		return game;
 	}
 
-	public Player getLocalPlayer() {
+	public ClientMP getLocalPlayer() {
 		return localPlayer;
+	}
+	
+	protected String getLogPre() {
+		return "[" + getLocalPlayer().getName() + "] ";
 	}
 }

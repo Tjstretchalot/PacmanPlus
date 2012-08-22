@@ -8,12 +8,13 @@ import tim.pacman.GameMap;
 import tim.pacman.GameMode;
 import tim.pacman.Ghost;
 import tim.pacman.Player;
+import tim.pacman.network.PacmanNetworking;
 
 public class FreeForAllMode extends AbstractMultiplayerGameMode {
 	private int numberGhosts;
 	
-	public FreeForAllMode(GameMap map, int numberGhosts) {
-		super(map, numberGhosts);
+	public FreeForAllMode(GameMap map, PacmanNetworking networking, int numberGhosts) {
+		super(map, networking, numberGhosts);
 		
 	}
 

@@ -18,6 +18,8 @@ import tim.pacman.GameMode;
 import tim.pacman.Gui;
 import tim.pacman.PacmanApplication;
 import tim.pacman.Player;
+import tim.pacman.impl.multiplayer.AbstractMultiplayerGameMode;
+import tim.pacman.impl.multiplayer.ClientMP;
 import tim.pacman.network.HostNetworking;
 import tim.pacman.network.PacmanNetworking;
 
@@ -30,9 +32,9 @@ import tim.pacman.network.PacmanNetworking;
  */
 public class LobbyGui implements Gui {
 	private PacmanNetworking network;
-	private GameMode gameMode;
+	private AbstractMultiplayerGameMode gameMode;
 	private Gui previousGUI;
-	private Player playerSelected;
+	private ClientMP playerSelected;
 	private int numGhosts;
 	private int maxPlayers;
 	private String mode;
@@ -40,7 +42,7 @@ public class LobbyGui implements Gui {
 	private boolean addedDelims;
 	private boolean host;
 	
-	public LobbyGui(PacmanNetworking network, GameMode gameMode, boolean host, String mode, String modeInfo, 
+	public LobbyGui(PacmanNetworking network, AbstractMultiplayerGameMode gameMode, boolean host, String mode, String modeInfo, 
 			int numGhosts, int maxPlayers, String plName, Gui previousGUI)
 	{
 		this.network = network;
@@ -94,6 +96,7 @@ public class LobbyGui implements Gui {
 				if(kick && clickable)
 				{
 					((HostNetworking) network).kickPlayer(playerSelected);
+					PacmanApplication.application.setLastChange(PacmanApplication.getTime());
 				}
 			}else
 				drawText(graphics, "Kick Player", x, y);
@@ -106,6 +109,7 @@ public class LobbyGui implements Gui {
 				if(start && clickable)
 				{
 					((HostNetworking) network).startGame();
+					PacmanApplication.application.setLastChange(PacmanApplication.getTime());
 					// TODO Game mode etc..
 				}
 			}else
@@ -119,6 +123,7 @@ public class LobbyGui implements Gui {
 		{
 			((HostNetworking) network).cleanup();
 			PacmanApplication.application.setGUI(previousGUI);
+			
 		}
 		
 		leftX += 5;
@@ -130,7 +135,7 @@ public class LobbyGui implements Gui {
 		
 		synchronized(network.getPlayers())
 		{
-			for(Player pl : network.getPlayers())
+			for(ClientMP pl : network.getPlayers())
 			{
 				boolean select = PacmanApplication.drawCenteredHText(graphics, pl.getName(), leftX, rightX, y);
 				if(select && clickable)

@@ -45,7 +45,7 @@ public class AStarGameMap extends GameMap {
 	{
 		switch(getType(x, y))
 		{
-		case EMPTY: case EATEN_ORB:
+		case EMPTY: case EATEN_ORB: case PLAYER_SPAWNER:
 			objectMapArray[x][y].setParentCost(3000);
 			break;
 		case WALL:

@@ -97,4 +97,10 @@ public interface GameMode {
 	 * @param g
 	 */
 	public void snapToGrid(Player g);
+
+	/**
+	 * Returns the map that is attached to this game mode
+	 * @return the game map
+	 */
+	public GameMap getGameMap();
 }

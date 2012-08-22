@@ -24,8 +24,10 @@ import tim.pacman.GameMode;
 import tim.pacman.Gui;
 import tim.pacman.PacmanApplication;
 import tim.pacman.impl.ai.AStarGameMap;
+import tim.pacman.impl.multiplayer.AbstractMultiplayerGameMode;
 import tim.pacman.impl.multiplayer.FreeForAllMode;
 import tim.pacman.impl.multiplayer.MultiplayerBuiltToLast;
+import tim.pacman.impl.multiplayer.MultiplayerData;
 import tim.pacman.impl.multiplayer.MultiplayerTagMode;
 import tim.pacman.network.HostNetworking;
 import tim.pacman.network.LANGame;
@@ -144,23 +146,14 @@ public class PrepareHostGui implements Gui {
 		boolean done = drawCenteredHText(graphics, "Done", y);
 		if(done && chScreen)
 		{
-			GameMap map = new AStarGameMap(GameMap.GAME_MAP);
-			GameMode gMode = null;
+			AStarGameMap map = new AStarGameMap(GameMap.GAME_MAP);
+			AbstractMultiplayerGameMode gMode = null;
 			
-			switch(mode)
-			{
-			case 0:
-				gMode = new FreeForAllMode(map, numGhosts);
-				break;
-			case 1:
-				gMode = new MultiplayerBuiltToLast(map, numGhosts);
-				break;
-			case 2:
-				gMode = new MultiplayerTagMode(map, numGhosts);
-				break;
-			}
+			HostNetworking networking = new HostNetworking(gMode, maxPlayers, numGhosts, currentName);
+			gMode = MultiplayerData.createInstance((byte) mode, networking, numGhosts, map);
+			networking.gameMode = gMode;
 			
-			PacmanApplication.application.setGUI(new LobbyGui(new HostNetworking(gMode, maxPlayers, numGhosts, currentName), gMode, true, MULTIPLAYER_MODES[mode * 2], 
+			PacmanApplication.application.setGUI(new LobbyGui(networking, gMode, true, MULTIPLAYER_MODES[mode * 2], 
 					MULTIPLAYER_MODES[mode * 2 + 1], numGhosts, maxPlayers, currentName, this));
 		}
 		

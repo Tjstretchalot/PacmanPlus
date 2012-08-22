@@ -3,6 +3,7 @@
  */
 package tim.pacman.network;
 
+import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -11,8 +12,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import tim.pacman.GameMap;
 import tim.pacman.GameMode;
+import tim.pacman.GhostController;
+import tim.pacman.PacmanApplication;
 import tim.pacman.Player;
+import tim.pacman.impl.multiplayer.AbstractMultiplayerGameMode;
 import tim.pacman.impl.multiplayer.ClientMP;
 import tim.pacman.impl.multiplayer.MultiplayerData;
 
@@ -21,14 +26,21 @@ import tim.pacman.impl.multiplayer.MultiplayerData;
  *
  */
 public class HostNetworking extends PacmanNetworking {
-	private GameMode gameMode;
+	public AbstractMultiplayerGameMode gameMode;
 	private ServerSocketChannel servChannel;
 	private ConnectionHandler mConnectionHandler;
-	private Player hostPlayer;
+	private ClientMP hostPlayer;
 	private int maxPlayers;
 	private int numGhosts;
+	
+	/**
+	 * The controls that are actually moving
+	 * the ghost.  This is just a wrapper to
+	 * make sure subclasses get it.
+	 */
+	protected GhostController realGhostControls;
 
-	public HostNetworking(GameMode gameMode, int maxPlayers, int numGhosts, String playerName) {
+	public HostNetworking(AbstractMultiplayerGameMode gameMode, int maxPlayers, int numGhosts, String playerName) {
 		this.gameMode = gameMode;
 		running = true;
 		this.maxPlayers = maxPlayers;
@@ -36,13 +48,21 @@ public class HostNetworking extends PacmanNetworking {
 		
 		hostPlayer = new ClientMP(playerName, 0, 0);
 		localPlayer = hostPlayer;
-		
-		System.out.println("Host created: " + gameMode.getClass().getSimpleName() + ", " + maxPlayers +
-				", " + numGhosts + ", " + playerName);
 		initializeChannel();
 		initializeThreads();
 		
 		connectedPlayers.add(hostPlayer);
+		
+		Thread th = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				endGame();
+			}
+			
+		});
+		
+		Runtime.getRuntime().addShutdownHook(th);
 	}
 
 	private void initializeThreads() {
@@ -64,31 +84,52 @@ public class HostNetworking extends PacmanNetworking {
 		
 		while(processQueue.size() > 0 && running)
 		{
-			process(processQueue.poll());
+			process((PlayerPacket) processQueue.poll());
 		}
 	}
 
-	private void process(Packet packet) {
+	private void process(PlayerPacket packet) {
 		synchronized(this)
 		{
+			ByteBuffer buffer = packet.getData();
+			if(buffer.position() == buffer.limit())
+				buffer.position(0);
+			buffer.get();
+			System.out.println(getLogPre() + " Processing: " + buffer);
 			switch(packet.getType())
 			{
 			case CLIENT_DISCONNECTED:
-				Player pla = ((PlayerPacket) packet).getPlayer();
+				ClientMP pla = packet.getPlayer();
 				int ind = getPlayers().indexOf(pla);
 				System.out.println("Client #" + (ind + 1) + " [" + pla.getName() + 
 						"] disconnected: Left Server");
 				
-				ByteBuffer buffer = ByteBuffer.allocate(1028);
+				buffer.clear();
 				buffer.put(CLIENT_DISCONNECTED);
 				buffer.put((byte) ind);
 				
-				Packet sendPacket = new PlayerPacket(pla, true, CLIENT_DISCONNECTED, buffer);
+				PlayerPacket sendPacket = new PlayerPacket(pla, true, CLIENT_DISCONNECTED, buffer);
 				sendQueue.add(sendPacket);
 				getPlayers().remove(ind);
-				getPlayerChannels().remove(ind - 1);
+				if(ind != 0)
+					getPlayerChannels().remove(ind - 1);
+				break;
+			case FINISHED_PREPARING:
+				packet.getPlayer().setPrepared(true);
+				System.out.println(packet.getPlayer() + " is prepared.");
+				break;
+			case PLAYER_UPDATE:
+				if(packet.getPlayer() != hostPlayer)
+				{
+					System.err.println(packet.getPlayer().getName() + " is attempting to hack!");
+					break;
+				}
+				int playerIndex = buffer.get();
+				float newX = buffer.getFloat();
+				float newY = buffer.getFloat();
 				
-				
+				getPlayers().get(playerIndex).getLocation().setLocation(newX, newY);
+				System.out.println("Updated " + getPlayers().get(playerIndex).getName() + "'s location.");
 				break;
 			default:
 				System.err.println("Odd type retrieved: " + packet.getType());
@@ -199,7 +240,7 @@ public class HostNetworking extends PacmanNetworking {
 					
 					chan.configureBlocking(false);
 					
-					Player player = new Player(nmBuilder.toString(), 0, 0);
+					ClientMP player = new ClientMP(nmBuilder.toString(), 0, 0);
 					buffer.clear();
 					buffer.put(CLIENT_CONNECTED);
 					buffer.putInt(player.getName().length());
@@ -209,11 +250,15 @@ public class HostNetworking extends PacmanNetworking {
 					getPlayers().add(player);
 					getPlayerChannels().add(chan);
 					
-					Packet packet = new PlayerPacket(player, false, CLIENT_CONNECTED, buffer);
+					PlayerPacket packet = new PlayerPacket(player, false, CLIENT_CONNECTED, buffer);
 					sendQueue.add(packet);
 				}catch(IOException exc)
 				{
 					System.err.println("An error occurred accepting connection: " + exc.getMessage());
+					if(!running)
+					{
+						return;
+					}
 				}
 			}
 		}
@@ -232,18 +277,111 @@ public class HostNetworking extends PacmanNetworking {
 		}
 	}
 
-	public void kickPlayer(Player player) {
-		Packet kickPacket = new PlayerPacket(player, true, CLIENT_DISCONNECTED, ByteBuffer.allocate(5));
+	public void kickPlayer(ClientMP player) {
+		PlayerPacket kickPacket = new PlayerPacket(player, true, CLIENT_DISCONNECTED, ByteBuffer.allocate(5));
 		processQueue.add(kickPacket);
 		sendQueue.add(kickPacket);
 	}
 
+	/**
+	 * Starts the game.
+	 */
 	public void startGame() {
-		// TODO Auto-generated method stub
+		ByteBuffer buffer = ByteBuffer.allocate(1028);
+		buffer.put(PREPARE_GAME);
+		PlayerPacket packet = new PlayerPacket(hostPlayer, true, PREPARE_GAME, buffer);
+		sendQueue.add(packet);
 		
+		// Prepare the game locally
+		PacmanApplication.application.playGame(gameMode, gameMode.getGameMap(), this, this);
+		hostPlayer.setPrepared(true);
+		
+		Thread th = new Thread(new Runnable() {
+			@Override
+			public void run()
+			{
+				while(!allPlayersPrepared())
+				{
+					try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				System.out.println("Done waiting! All players are ready to go");
+				gameMode.setWaiting(false);
+				spawnAllPlayers();
+				ByteBuffer buffer = ByteBuffer.allocate(1028);
+				buffer.put(START_GAME);
+				
+				PlayerPacket plPacket = new PlayerPacket(getLocalPlayer(), false, START_GAME, buffer);
+				sendQueue.add(plPacket);
+				// processQueue.add((Packet) plPacket.clone());
+			}
+		});
+		th.start();
+		
+	}
+
+	protected void spawnAllPlayers() {
+		GameMap map = gameMode.getGameMap();
+		for(byte i = 0; i < connectedPlayers.size(); i++)
+		{
+			ClientMP client = connectedPlayers.get(i);
+			Point2D.Float location = map.fromGridLocation(
+					map.chooseRandomUnfilledMP(connectedPlayers, GameMap.PLAYER_SPAWNER)
+					);
+			
+			ByteBuffer buffer = ByteBuffer.allocate(1028);
+			buffer.put(PLAYER_UPDATE);
+			buffer.put(i);
+			buffer.putFloat(location.x + 2);
+			buffer.putFloat(location.y + 2);
+			
+			PlayerPacket packet = new PlayerPacket(hostPlayer, true, PLAYER_UPDATE, buffer);
+			processQueue.add(packet);
+			if(client == hostPlayer)
+				packet.setSendToPlayer(false);
+			sendQueue.add((PlayerPacket) packet.clone());
+			buffer.clear();
+		}
+	}
+
+	protected boolean allPlayersPrepared() {
+		for(ClientMP pla : connectedPlayers)
+		{
+			if(!pla.isPrepared())
+			{
+				System.out.println(pla.getName() + " is not prepared.");
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public Player getHost() {
 		return hostPlayer;
+	}
+
+	public void endGame() {
+		synchronized(this)
+		{
+			
+			for(ClientMP client : connectedPlayers)
+			{
+				kickPlayer(client);
+			}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+			running = false;
+			try {
+				servChannel.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }
